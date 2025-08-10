@@ -30,9 +30,9 @@
       <div id="status" class="muted"></div>
     </div>
   </form>
-
+OUR_DEPLOYE
 <script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYZrq3q3vAU6Isv_6P7fHf2hdvipQXuT011V2BUbWEBYo3iT1JJSlqYebHNcGmAJJ2/exec'; // Replace with your deployed Apps Script URL
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
 
   const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
@@ -44,7 +44,7 @@
     label.textContent = pos + ' *';
     const input = document.createElement('input');
     input.type = 'text';
-    input.dataset.pos = pos;
+    input.name = pos; // name must match the key expected in backend (sheet headers)
     input.placeholder = 'Nominee full name';
     input.required = true;
     input.maxLength = 150;
@@ -77,7 +77,7 @@
     ev.preventDefault();
     setStatus('', 'muted');
 
-    const inputs = Array.from(container.querySelectorAll('input[data-pos]'));
+    const inputs = Array.from(container.querySelectorAll('input'));
     const values = inputs.map(i => i.value.trim());
 
     if (values.some(v => v === '')) {
@@ -90,33 +90,33 @@
       return;
     }
 
-    const positionsObj = {};
-    POSITIONS.forEach((p, idx) => positionsObj[p] = values[idx]);
-
     submitBtn.disabled = true;
     setStatus('Submitting...', 'muted');
+
+    // Prepare URL-encoded form data
+    const formData = new URLSearchParams();
+    POSITIONS.forEach((pos, i) => {
+      formData.append(pos, values[i]);
+    });
 
     try {
       const resp = await fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ positions: positionsObj }),
-        mode: 'cors'  // must use cors mode for cross-origin requests
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
       });
 
-      if (!resp.ok) throw new Error('Network response not ok');
+      const text = await resp.text();
 
-      const data = await resp.json();
-
-      if (data && data.ok) {
+      if (text === 'Success') {
         setStatus('Nominations submitted, thank you', 'success');
         submitBtn.disabled = true;
       } else {
-        setStatus('Server error: ' + (data.error || resp.statusText), 'error');
+        setStatus('Server error: ' + text, 'error');
         submitBtn.disabled = false;
       }
     } catch (err) {
-      setStatus('Network or CORS error: ' + err.message, 'error');
+      setStatus('Network error: ' + err.message, 'error');
       submitBtn.disabled = false;
     }
   });
