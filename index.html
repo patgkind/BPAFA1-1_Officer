@@ -17,6 +17,7 @@
     .success { color:green; margin-top:10px; }
     .error { color:#b00020; margin-top:10px; }
     .muted { color:#666; font-size:0.9em; }
+    pre { background:#eee; padding:10px; border-radius:6px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -32,6 +33,12 @@
     </div>
   </form>
 
+  <hr/>
+
+  <h2>View Submitted Nominations</h2>
+  <button id="loadDataBtn">Load Nominations</button>
+  <pre id="dataDisplay"></pre>
+
   <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYZrq3q3vAU6Isv_6P7fHf2hdvipQXuT011V2BUbWEBYo3iT1JJSlqYebHNcGmAJJ2/exec';
 
@@ -42,7 +49,7 @@
       const card = document.createElement('div');
       card.className = 'card';
       const label = document.createElement('label');
-      label.textContent = pos + '  *';
+      label.textContent = pos + ' *';
       const input = document.createElement('input');
       input.type = 'text';
       input.dataset.pos = pos;
@@ -67,7 +74,7 @@
       const seen = {};
       for (const v of values) {
         const key = (v || '').toLowerCase().trim();
-        if (!key || key === 'n/a') continue; // skip empty or 'N/A' for duplicates
+        if (!key || key === 'n/a') continue; // skip empty or 'N/A'
         if (seen[key]) return true;
         seen[key] = true;
       }
@@ -111,14 +118,39 @@
         const data = await resp.json();
         if (data && data.ok) {
           setStatus('Nominations submitted, thank you', 'success');
-          // Keep submit button disabled to prevent multiple submissions
+          submitBtn.disabled = true; // prevent multiple submits
         } else {
-          setStatus('Server error: ' + (data && data.error ? data.error : resp.statusText), 'error');
+          setStatus('Server error: ' + (data.error || resp.statusText), 'error');
           submitBtn.disabled = false;
         }
       } catch (err) {
         setStatus('Network error', 'error');
         submitBtn.disabled = false;
+      }
+    });
+
+    // Load and display submitted nominations from sheet (GET)
+    const loadDataBtn = document.getElementById('loadDataBtn');
+    const dataDisplay = document.getElementById('dataDisplay');
+
+    loadDataBtn.addEventListener('click', async () => {
+      setStatus('', 'muted');
+      dataDisplay.textContent = 'Loading...';
+
+      try {
+        const resp = await fetch(SCRIPT_URL);
+        if (!resp.ok) throw new Error('Network response was not ok');
+        const data = await resp.json();
+        if (Array.isArray(data) && data.length) {
+          const formatted = data.map((row, i) => `#${i + 1}:\n` + Object.entries(row).map(([k,v]) => `  ${k}: ${v}`).join('\n')).join('\n\n');
+          dataDisplay.textContent = formatted;
+        } else if (data.error) {
+          dataDisplay.textContent = 'Error: ' + data.error;
+        } else {
+          dataDisplay.textContent = 'No nominations found.';
+        }
+      } catch (err) {
+        dataDisplay.textContent = 'Failed to load data: ' + err.message;
       }
     });
   </script>
