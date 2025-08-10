@@ -42,14 +42,13 @@
   const status = document.getElementById('status');
   const submitBtn = document.getElementById('submitBtn');
 
-  let nomineeNames = [];
-
+  // Set status message
   function setStatus(text, cls) {
     status.textContent = text || '';
     status.className = cls || 'muted';
   }
 
-  // Check duplicates in selected values
+  // Check for duplicate selected nominees
   function duplicatesExist(values) {
     const seen = {};
     for (const v of values) {
@@ -61,7 +60,15 @@
     return false;
   }
 
-  // Populate the dropdown selects with options
+  // Fetch unique nominee names for one position column
+  async function fetchNamesForPosition(position) {
+    const resp = await fetch(SCRIPT_URL + '?action=getNames&position=' + encodeURIComponent(position));
+    if (!resp.ok) throw new Error('Network response not ok');
+    const names = await resp.json();
+    return names;
+  }
+
+  // Create dropdown options
   function createDropdownOptions(select, options) {
     const emptyOption = document.createElement('option');
     emptyOption.value = '';
@@ -76,9 +83,9 @@
     });
   }
 
-  // Create form fields after fetching names
-  function createFormFields() {
-    POSITIONS.forEach(pos => {
+  // Create all position dropdowns sequentially with fetched options
+  async function createFormFields() {
+    for (const pos of POSITIONS) {
       const card = document.createElement('div');
       card.className = 'card';
 
@@ -89,35 +96,24 @@
       select.name = pos;
       select.required = true;
 
-      createDropdownOptions(select, nomineeNames);
+      try {
+        const names = await fetchNamesForPosition(pos);
+        names.sort();
+        createDropdownOptions(select, names);
+      } catch (e) {
+        setStatus(`Failed to load nominees for ${pos}: ${e.message}`, 'error');
+      }
 
       card.appendChild(label);
       card.appendChild(select);
       container.appendChild(card);
-    });
-  }
-
-  // Fetch unique nominee names from Apps Script web app
-  async function fetchNomineeNames() {
-    try {
-      setStatus('Loading nominee list...', 'muted');
-      const resp = await fetch(SCRIPT_URL + '?action=getNames');
-      if (!resp.ok) throw new Error('Network response not ok');
-      const data = await resp.json();
-      if (!Array.isArray(data)) throw new Error('Invalid data format');
-      nomineeNames = data;
-      nomineeNames.sort();
-      setStatus('');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit nominations';
-      createFormFields();
-    } catch (err) {
-      setStatus('Failed to load nominees: ' + err.message, 'error');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Failed to load nominees';
     }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit nominations';
+    setStatus('');
   }
 
+  // Form submit handler
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     setStatus('', 'muted');
@@ -165,9 +161,8 @@
     }
   });
 
-  // Start by fetching nominee names
-  fetchNomineeNames();
-
+  // Initialize form fields on page load
+  createFormFields();
 </script>
 </body>
 </html>
