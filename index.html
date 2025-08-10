@@ -33,7 +33,7 @@
   </form>
 
   <script>
-    // Paste your deployed Apps Script Web App URL here
+    // Your deployed Apps Script Web App URL
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec';
 
     const POSITIONS = ['President','Vice President','Secretary','Treasurer','Auditor','P.I.O','Pubmat 1','Pubmat 2'];
@@ -79,7 +79,7 @@
       ev.preventDefault();
       setStatus('', 'muted');
 
-      if (!SCRIPT_URL || SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec')) {
+      if (!SCRIPT_URL) {
         setStatus('Set SCRIPT_URL to your Apps Script Web App URL', 'error');
         return;
       }
