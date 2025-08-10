@@ -9,12 +9,9 @@
     h1 { margin-bottom: 6px; }
     .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
     label { display:block; font-weight:600; margin-bottom:6px; }
-    input[type="text"], input[type="number"], select, textarea {
+    input[type="text"] {
       width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
     }
-    .row { display:flex; gap:12px; }
-    .row > div { flex:1; }
-    .small { font-size:0.9em; color:#666; margin-top:6px; }
     button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
     button[disabled] { opacity:0.6; cursor:not-allowed; }
     .success { color:green; margin-top:10px; }
@@ -25,23 +22,6 @@
 <body>
   <h1>Class Officer Nomination</h1>
   <p class="muted">Fill each position with the nominee's full name, then submit once.</p>
-
-  <div class="card">
-    <label for="studentName">Your name, required</label>
-    <input id="studentName" type="text" placeholder="Juan Dela Cruz" />
-    <div class="small">We record who nominated, for audit.</div>
-  </div>
-
-  <div class="card row">
-    <div>
-      <label for="studentId">Student ID, optional</label>
-      <input id="studentId" type="text" placeholder="201900123" />
-    </div>
-    <div>
-      <label for="className">Class, optional</label>
-      <input id="className" type="text" placeholder="BSCS 1-A" />
-    </div>
-  </div>
 
   <form id="nomForm">
     <div id="positionsContainer"></div>
@@ -54,12 +34,10 @@
 
   <script>
     // Paste your deployed Apps Script Web App URL here
-    const SCRIPT_URL = 'PASTE_YOUR_WEBAPP_URL_HERE';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec';
 
-    // Fixed positions, in the order you want columns to appear in the sheet
     const POSITIONS = ['President','Vice President','Secretary','Treasurer','Auditor','P.I.O','Pubmat 1','Pubmat 2'];
 
-    // render inputs
     const container = document.getElementById('positionsContainer');
     POSITIONS.forEach(pos => {
       const card = document.createElement('div');
@@ -76,12 +54,9 @@
       container.appendChild(card);
     });
 
-    // simple client checks
     const form = document.getElementById('nomForm');
     const status = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
-
-    // simple one-vote lock using localStorage, remove if you don't want this behavior
     const LOCK_KEY = 'eva_nom_submitted';
 
     function setStatus(text, cls) {
@@ -89,7 +64,6 @@
       status.className = cls ? cls : 'muted';
     }
 
-    // prevent duplicate names across positions
     function duplicatesExist(values) {
       const seen = {};
       for (const v of values) {
@@ -106,73 +80,55 @@
       setStatus('', 'muted');
 
       if (!SCRIPT_URL || SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec')) {
-        setStatus('Set SCRIPT_URL in the code to your Apps Script web app URL, then try again', 'error');
+        setStatus('Set SCRIPT_URL to your Apps Script Web App URL', 'error');
         return;
       }
 
       if (localStorage.getItem(LOCK_KEY)) {
-        setStatus('You have already submitted, multiple submissions are disabled', 'error');
-        return;
-      }
-
-      const studentName = document.getElementById('studentName').value.trim();
-      const studentId = document.getElementById('studentId').value.trim();
-      const className = document.getElementById('className').value.trim();
-
-      if (!studentName) {
-        setStatus('Enter your name before submitting', 'error');
+        setStatus('You have already submitted', 'error');
         return;
       }
 
       const inputs = Array.from(container.querySelectorAll('input[data-pos]'));
       const values = inputs.map(i => i.value.trim());
+
       if (values.some(v => v === '')) {
-        setStatus('Fill all nominee name fields, or put "N/A" if none', 'error');
+        setStatus('Fill all nominee name fields, or put "N/A"', 'error');
         return;
       }
 
       if (duplicatesExist(values)) {
-        setStatus('A nominee name appears more than once across positions, please check', 'error');
+        setStatus('Duplicate nominee found across positions', 'error');
         return;
       }
 
-      // build positions object with same order as POSITIONS array
       const positionsObj = {};
       POSITIONS.forEach((p, idx) => positionsObj[p] = values[idx]);
 
-      // payload
-      const payload = {
-        studentName,
-        studentId,
-        className,
-        positions: positionsObj
-      };
+      const payload = { positions: positionsObj };
 
       submitBtn.disabled = true;
-      setStatus('Submitting, please wait...', 'muted');
+      setStatus('Submitting...', 'muted');
 
       try {
         const resp = await fetch(SCRIPT_URL, {
           method: 'POST',
-          mode: 'cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const data = await resp.json();
         if (data && data.ok) {
-          localStorage.setItem(LOCK_KEY, '1'); // lock
+          localStorage.setItem(LOCK_KEY, '1');
           setStatus('Nominations submitted, thank you', 'success');
-          submitBtn.disabled = false;
         } else {
-          setStatus('Server error, try again: ' + (data && data.error ? data.error : resp.statusText), 'error');
-          submitBtn.disabled = false;
+          setStatus('Server error: ' + (data && data.error ? data.error : resp.statusText), 'error');
         }
       } catch (err) {
-        setStatus('Network error, check connection and try again', 'error');
+        setStatus('Network error', 'error');
+      } finally {
         submitBtn.disabled = false;
       }
     });
   </script>
 </body>
 </html>
-
