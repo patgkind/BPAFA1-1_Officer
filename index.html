@@ -1,24 +1,23 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Class Officer Nomination</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
-    h1 { margin-bottom: 6px; }
-    .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
-    label { display:block; font-weight:600; margin-bottom:6px; }
-    input[type="text"] {
-      width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
-    }
-    button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
-    button[disabled] { opacity:0.6; cursor:not-allowed; }
-    .success { color:green; margin-top:10px; }
-    .error { color:#b00020; margin-top:10px; }
-    .muted { color:#666; font-size:0.9em; }
-    pre { background:#eee; padding:10px; border-radius:6px; white-space: pre-wrap; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Class Officer Nomination</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
+  h1 { margin-bottom: 6px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  input[type="text"] {
+    width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
+  }
+  button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
+  button[disabled] { opacity:0.6; cursor:not-allowed; }
+  .success { color:green; margin-top:10px; }
+  .error { color:#b00020; margin-top:10px; }
+  .muted { color:#666; font-size:0.9em; }
+</style>
 </head>
 <body>
   <h1>Class Officer Nomination</h1>
@@ -26,133 +25,101 @@
 
   <form id="nomForm">
     <div id="positionsContainer"></div>
-
     <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
       <button id="submitBtn" type="submit">Submit nominations</button>
       <div id="status" class="muted"></div>
     </div>
   </form>
 
-  <hr/>
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Replace with your deployed Apps Script URL
 
-  <h2>View Submitted Nominations</h2>
-  <button id="loadDataBtn">Load Nominations</button>
-  <pre id="dataDisplay"></pre>
+  const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYZrq3q3vAU6Isv_6P7fHf2hdvipQXuT011V2BUbWEBYo3iT1JJSlqYebHNcGmAJJ2/exec';
+  const container = document.getElementById('positionsContainer');
+  POSITIONS.forEach(pos => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const label = document.createElement('label');
+    label.textContent = pos + ' *';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.dataset.pos = pos;
+    input.placeholder = 'Nominee full name';
+    input.required = true;
+    input.maxLength = 150;
+    card.appendChild(label);
+    card.appendChild(input);
+    container.appendChild(card);
+  });
 
-    const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
+  const form = document.getElementById('nomForm');
+  const status = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
 
-    const container = document.getElementById('positionsContainer');
-    POSITIONS.forEach(pos => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      const label = document.createElement('label');
-      label.textContent = pos + ' *';
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.dataset.pos = pos;
-      input.placeholder = 'Nominee full name';
-      input.required = true;
-      input.maxLength = 150;
-      card.appendChild(label);
-      card.appendChild(input);
-      container.appendChild(card);
-    });
+  function setStatus(text, cls) {
+    status.textContent = text || '';
+    status.className = cls || 'muted';
+  }
 
-    const form = document.getElementById('nomForm');
-    const status = document.getElementById('status');
-    const submitBtn = document.getElementById('submitBtn');
+  function duplicatesExist(values) {
+    const seen = {};
+    for (const v of values) {
+      const key = (v || '').toLowerCase().trim();
+      if (!key || key === 'n/a') continue;
+      if (seen[key]) return true;
+      seen[key] = true;
+    }
+    return false;
+  }
 
-    function setStatus(text, cls) {
-      status.textContent = text || '';
-      status.className = cls ? cls : 'muted';
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    setStatus('', 'muted');
+
+    const inputs = Array.from(container.querySelectorAll('input[data-pos]'));
+    const values = inputs.map(i => i.value.trim());
+
+    if (values.some(v => v === '')) {
+      setStatus('Fill all nominee name fields, or put "N/A"', 'error');
+      return;
     }
 
-    function duplicatesExist(values) {
-      const seen = {};
-      for (const v of values) {
-        const key = (v || '').toLowerCase().trim();
-        if (!key || key === 'n/a') continue; // skip empty or 'N/A'
-        if (seen[key]) return true;
-        seen[key] = true;
-      }
-      return false;
+    if (duplicatesExist(values)) {
+      setStatus('Duplicate nominee found across positions', 'error');
+      return;
     }
 
-    form.addEventListener('submit', async function(ev) {
-      ev.preventDefault();
-      setStatus('', 'muted');
+    const positionsObj = {};
+    POSITIONS.forEach((p, idx) => positionsObj[p] = values[idx]);
 
-      if (!SCRIPT_URL) {
-        setStatus('Set SCRIPT_URL to your Apps Script Web App URL', 'error');
-        return;
-      }
+    submitBtn.disabled = true;
+    setStatus('Submitting...', 'muted');
 
-      const inputs = Array.from(container.querySelectorAll('input[data-pos]'));
-      const values = inputs.map(i => i.value.trim());
+    try {
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ positions: positionsObj }),
+        mode: 'cors'  // must use cors mode for cross-origin requests
+      });
 
-      if (values.some(v => v === '')) {
-        setStatus('Fill all nominee name fields, or put "N/A"', 'error');
-        return;
-      }
+      if (!resp.ok) throw new Error('Network response not ok');
 
-      if (duplicatesExist(values)) {
-        setStatus('Duplicate nominee found across positions', 'error');
-        return;
-      }
+      const data = await resp.json();
 
-      const positionsObj = {};
-      POSITIONS.forEach((p, idx) => positionsObj[p] = values[idx]);
-
-      submitBtn.disabled = true;
-      setStatus('Submitting...', 'muted');
-
-      try {
-        const resp = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ positions: positionsObj }),
-        });
-        const data = await resp.json();
-        if (data && data.ok) {
-          setStatus('Nominations submitted, thank you', 'success');
-          submitBtn.disabled = true; // prevent multiple submits
-        } else {
-          setStatus('Server error: ' + (data.error || resp.statusText), 'error');
-          submitBtn.disabled = false;
-        }
-      } catch (err) {
-        setStatus('Network error', 'error');
+      if (data && data.ok) {
+        setStatus('Nominations submitted, thank you', 'success');
+        submitBtn.disabled = true;
+      } else {
+        setStatus('Server error: ' + (data.error || resp.statusText), 'error');
         submitBtn.disabled = false;
       }
-    });
-
-    // Load and display submitted nominations from sheet (GET)
-    const loadDataBtn = document.getElementById('loadDataBtn');
-    const dataDisplay = document.getElementById('dataDisplay');
-
-    loadDataBtn.addEventListener('click', async () => {
-      setStatus('', 'muted');
-      dataDisplay.textContent = 'Loading...';
-
-      try {
-        const resp = await fetch(SCRIPT_URL);
-        if (!resp.ok) throw new Error('Network response was not ok');
-        const data = await resp.json();
-        if (Array.isArray(data) && data.length) {
-          const formatted = data.map((row, i) => `#${i + 1}:\n` + Object.entries(row).map(([k,v]) => `  ${k}: ${v}`).join('\n')).join('\n\n');
-          dataDisplay.textContent = formatted;
-        } else if (data.error) {
-          dataDisplay.textContent = 'Error: ' + data.error;
-        } else {
-          dataDisplay.textContent = 'No nominations found.';
-        }
-      } catch (err) {
-        dataDisplay.textContent = 'Failed to load data: ' + err.message;
-      }
-    });
-  </script>
+    } catch (err) {
+      setStatus('Network or CORS error: ' + err.message, 'error');
+      submitBtn.disabled = false;
+    }
+  });
+</script>
 </body>
 </html>
