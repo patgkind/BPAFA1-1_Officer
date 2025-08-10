@@ -42,13 +42,11 @@
   const status = document.getElementById('status');
   const submitBtn = document.getElementById('submitBtn');
 
-  // Set status message
   function setStatus(text, cls) {
     status.textContent = text || '';
     status.className = cls || 'muted';
   }
 
-  // Check for duplicate selected nominees
   function duplicatesExist(values) {
     const seen = {};
     for (const v of values) {
@@ -60,7 +58,6 @@
     return false;
   }
 
-  // Fetch unique nominee names for one position column
   async function fetchNamesForPosition(position) {
     const resp = await fetch(SCRIPT_URL + '?action=getNames&position=' + encodeURIComponent(position));
     if (!resp.ok) throw new Error('Network response not ok');
@@ -68,7 +65,6 @@
     return names;
   }
 
-  // Create dropdown options
   function createDropdownOptions(select, options) {
     const emptyOption = document.createElement('option');
     emptyOption.value = '';
@@ -83,37 +79,48 @@
     });
   }
 
-  // Create all position dropdowns sequentially with fetched options
   async function createFormFields() {
-    for (const pos of POSITIONS) {
-      const card = document.createElement('div');
-      card.className = 'card';
+    container.innerHTML = '';
+    setStatus('Loading nominees...', 'muted');
+    submitBtn.disabled = true;
 
-      const label = document.createElement('label');
-      label.textContent = pos + ' *';
+    try {
+      const promises = POSITIONS.map(pos => fetchNamesForPosition(pos));
+      const results = await Promise.all(promises);
 
-      const select = document.createElement('select');
-      select.name = pos;
-      select.required = true;
+      POSITIONS.forEach((pos, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
 
-      try {
-        const names = await fetchNamesForPosition(pos);
+        const label = document.createElement('label');
+        label.textContent = pos + ' *';
+
+        const select = document.createElement('select');
+        select.name = pos;
+        select.required = true;
+
+        const names = results[i];
         names.sort();
-        createDropdownOptions(select, names);
-      } catch (e) {
-        setStatus(`Failed to load nominees for ${pos}: ${e.message}`, 'error');
-      }
 
-      card.appendChild(label);
-      card.appendChild(select);
-      container.appendChild(card);
+        createDropdownOptions(select, names);
+
+        card.appendChild(label);
+        card.appendChild(select);
+        container.appendChild(card);
+      });
+
+      setStatus('');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit nominations';
+
+    } catch (e) {
+      container.innerHTML = '';
+      setStatus('Failed to load nominees: ' + e.message, 'error');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Failed to load nominees';
     }
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit nominations';
-    setStatus('');
   }
 
-  // Form submit handler
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     setStatus('', 'muted');
@@ -161,7 +168,6 @@
     }
   });
 
-  // Initialize form fields on page load
   createFormFields();
 </script>
 </body>
