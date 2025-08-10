@@ -23,7 +23,7 @@
   <h1>Class Officer Nomination</h1>
   <p class="muted">Fill each position with the nominee's full name, then submit once.</p>
 
-  <form id="nomForm">
+  <form id="nomForm" autocomplete="off" novalidate>
     <div id="positionsContainer"></div>
 
     <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
@@ -33,8 +33,10 @@
   </form>
 
   <script>
-    // Paste your deployed Apps Script Web App URL here
+    // Your deployed Apps Script Web App URL
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec';
+    // If you ever use a placeholder, set it here; check will only complain when equal to this.
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_PLACEHOLDER_ID/exec';
 
     const POSITIONS = ['President','Vice President','Secretary','Treasurer','Auditor','P.I.O','Pubmat 1','Pubmat 2'];
 
@@ -61,7 +63,7 @@
 
     function setStatus(text, cls) {
       status.textContent = text || '';
-      status.className = cls ? cls : 'muted';
+      status.className = cls || 'muted';
     }
 
     function duplicatesExist(values) {
@@ -79,7 +81,8 @@
       ev.preventDefault();
       setStatus('', 'muted');
 
-      if (!SCRIPT_URL || SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycbxFKHFYJJLHcE81CJgD_HhHVICQWqaBbs8UPMuYW3-bDP6r68P0hHhr6qNSGhALwb4z/exec')) {
+      // Only block when SCRIPT_URL is blank or still the placeholder
+      if (!SCRIPT_URL || SCRIPT_URL === DEFAULT_SCRIPT_URL) {
         setStatus('Set SCRIPT_URL to your Apps Script Web App URL', 'error');
         return;
       }
@@ -92,6 +95,7 @@
       const inputs = Array.from(container.querySelectorAll('input[data-pos]'));
       const values = inputs.map(i => i.value.trim());
 
+      // require all fields filled (or allow "N/A")
       if (values.some(v => v === '')) {
         setStatus('Fill all nominee name fields, or put "N/A"', 'error');
         return;
@@ -116,15 +120,22 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await resp.json();
+
+        // try parse json, fallback to text
+        let data;
+        try { data = await resp.json(); } catch (e) { data = { ok: resp.ok }; }
+
         if (data && data.ok) {
           localStorage.setItem(LOCK_KEY, '1');
           setStatus('Nominations submitted, thank you', 'success');
+          form.reset();
         } else {
-          setStatus('Server error: ' + (data && data.error ? data.error : resp.statusText), 'error');
+          const errMsg = (data && data.error) ? data.error : (resp.statusText || 'server error');
+          setStatus('Server error: ' + errMsg, 'error');
         }
       } catch (err) {
         setStatus('Network error', 'error');
+        console.error(err);
       } finally {
         submitBtn.disabled = false;
       }
