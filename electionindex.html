@@ -33,7 +33,7 @@
   </form>
 
 <script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=election';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
   const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
   const container = document.getElementById('positionsContainer');
@@ -44,7 +44,6 @@
   // Store loaded options by position
   const positionOptions = {};
 
-  // Helper: create select dropdown for a position with options
   function createDropdown(position, options) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -75,18 +74,21 @@
     return card;
   }
 
-  // Load nominees for all positions sequentially
   async function loadNominees() {
     submitBtn.disabled = true;
     status.textContent = 'Loading nominees...';
+    status.className = 'muted';
 
     try {
       for (const pos of POSITIONS) {
         const url = `${SCRIPT_URL}?action=getNames&position=${encodeURIComponent(pos)}`;
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`Failed to fetch nominees for ${pos}`);
-        const names = await resp.json();
-        positionOptions[pos] = names;
+        const data = await resp.json();
+
+        if (!data.success) throw new Error(data.message || `Failed to load nominees for ${pos}`);
+
+        positionOptions[pos] = data.names || [];
       }
 
       container.innerHTML = '';
@@ -101,10 +103,10 @@
     } catch (err) {
       status.textContent = 'Error loading nominees: ' + err.message;
       status.className = 'error';
+      submitBtn.disabled = true;
     }
   }
 
-  // Check duplicate selections on submit
   function hasDuplicates(arr) {
     const lowered = arr.map(s => s.toLowerCase().trim());
     return new Set(lowered).size !== lowered.length;
@@ -134,7 +136,7 @@
     status.textContent = 'Submitting votes...';
 
     const formData = new URLSearchParams();
-    formData.append('action', 'election');
+    formData.append('action', 'submitElection'); // Correct action name
     POSITIONS.forEach((pos, i) => {
       formData.append(pos, values[i]);
     });
@@ -147,25 +149,28 @@
       });
 
       const text = await resp.text();
+      let jsonResp;
+      try {
+        jsonResp = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid server response');
+      }
 
-      if (text === 'Success') {
+      if (jsonResp.success) {
         status.textContent = 'Votes submitted successfully. Thank you!';
         status.className = 'success';
         submitBtn.disabled = true;
       } else {
-        status.textContent = 'Server error: ' + text;
-        status.className = 'error';
-        submitBtn.disabled = false;
+        throw new Error(jsonResp.message || 'Submission failed');
       }
 
     } catch (err) {
-      status.textContent = 'Network error: ' + err.message;
+      status.textContent = 'Server error: ' + err.message;
       status.className = 'error';
       submitBtn.disabled = false;
     }
   });
 
-  // Initialize
   loadNominees();
 </script>
 </body>
