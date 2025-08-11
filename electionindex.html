@@ -1,87 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Election Form</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Class Officer Election</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
+  h1 { margin-bottom: 6px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  select {
+    width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
+    background:#fff;
+  }
+  button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
+  button[disabled] { opacity:0.6; cursor:not-allowed; }
+  .success { color:green; margin-top:10px; }
+  .error { color:#b00020; margin-top:10px; }
+  .muted { color:#666; font-size:0.9em; }
+</style>
 </head>
 <body>
-  <h1>Election Form</h1>
-  <form id="electionForm">
+  <h1>Class Officer Election</h1>
+  <p class="muted">Select your preferred nominee for each position, then submit your votes once.</p>
+
+  <form id="electionForm" autocomplete="off">
     <div id="positionsContainer"></div>
-    <button type="submit">Submit Vote</button>
+    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+      <button id="submitBtn" type="submit" disabled>Loading...</button>
+      <div id="status" class="muted"></div>
+    </div>
   </form>
 
-  <div id="status"></div>
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=election';
 
-  <script>
-    const URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=election';
-    const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
+  const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
+  const container = document.getElementById('positionsContainer');
+  const form = document.getElementById('electionForm');
+  const status = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
 
-    const container = document.getElementById('positionsContainer');
-    const status = document.getElementById('status');
-    const form = document.getElementById('electionForm');
+  // Store options per position
+  const positionOptions = {};
 
-    async function fetchNominees(position) {
-      const res = await fetch(`${URL}?action=getNames&position=${encodeURIComponent(position)}`);
-      if (!res.ok) throw new Error('Network error');
-      const data = await res.json();
-      return data;
+  // Show loading state and disable submit while loading
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Loading...';
+
+  async function fetchNamesForPosition(pos) {
+    const url = `${SCRIPT_URL}?action=getNames&position=${encodeURIComponent(pos)}`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      return data; // array of names
+    } catch (err) {
+      console.error(`Failed to fetch names for ${pos}`, err);
+      return [];
     }
+  }
 
-    async function buildForm() {
-      status.textContent = 'Loading nominees...';
+  async function buildForm() {
+    for (const pos of POSITIONS) {
+      // Create card container
+      const card = document.createElement('div');
+      card.className = 'card';
 
-      for (const pos of POSITIONS) {
-        const nominees = await fetchNominees(pos);
+      // Label
+      const label = document.createElement('label');
+      label.textContent = pos + ' *';
+      card.appendChild(label);
 
-        const label = document.createElement('label');
-        label.textContent = pos + ': ';
-        const select = document.createElement('select');
-        select.name = pos;
-        select.required = true;
+      // Select dropdown
+      const select = document.createElement('select');
+      select.name = pos;
+      select.required = true;
 
-        // Default empty option
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = `Select ${pos}`;
-        select.appendChild(emptyOption);
+      // Add placeholder option
+      const placeholderOption = document.createElement('option');
+      placeholderOption.value = '';
+      placeholderOption.textContent = `Select ${pos}`;
+      placeholderOption.disabled = true;
+      placeholderOption.selected = true;
+      select.appendChild(placeholderOption);
 
-        nominees.forEach(name => {
-          const option = document.createElement('option');
-          option.value = name;
-          option.textContent = name;
-          select.appendChild(option);
+      // Fetch options from backend
+      const names = await fetchNamesForPosition(pos);
+
+      if (names.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '(No nominees available)';
+        opt.disabled = true;
+        select.appendChild(opt);
+      } else {
+        names.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
         });
-
-        label.appendChild(select);
-        container.appendChild(label);
-        container.appendChild(document.createElement('br'));
       }
 
-      status.textContent = '';
+      card.appendChild(select);
+      container.appendChild(card);
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit votes';
+  }
+
+  function duplicatesExist(values) {
+    const seen = new Set();
+    for (const v of values) {
+      const key = (v || '').toLowerCase().trim();
+      if (!key) return true; // empty values not allowed
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+    return false;
+  }
+
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    setStatus('', 'muted');
+
+    const selects = Array.from(container.querySelectorAll('select'));
+    const values = selects.map(s => s.value.trim());
+
+    if (values.some(v => v === '')) {
+      setStatus('Please select a nominee for every position', 'error');
+      return;
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    if (duplicatesExist(values)) {
+      setStatus('Duplicate nominee selected for multiple positions', 'error');
+      return;
+    }
 
-      const formData = new FormData(form);
-      formData.append('action', 'election');
+    submitBtn.disabled = true;
+    setStatus('Submitting...', 'muted');
 
-      status.textContent = 'Submitting vote...';
+    const formData = new URLSearchParams();
+    POSITIONS.forEach((pos, i) => formData.append(pos, values[i]));
 
-      try {
-        const response = await fetch(URL, {
-          method: 'POST',
-          body: new URLSearchParams(formData)
-        });
-        const text = await response.text();
-        status.textContent = text;
-      } catch (err) {
-        status.textContent = 'Error: ' + err.message;
+    try {
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      });
+
+      const text = await resp.text();
+      if (text === 'Success') {
+        setStatus('Votes submitted, thank you!', 'success');
+        submitBtn.disabled = true;
+      } else {
+        setStatus('Server error: ' + text, 'error');
+        submitBtn.disabled = false;
       }
-    });
+    } catch (err) {
+      setStatus('Network error: ' + err.message, 'error');
+      submitBtn.disabled = false;
+    }
+  });
 
-    buildForm();
-  </script>
+  function setStatus(text, cls) {
+    status.textContent = text || '';
+    status.className = cls || 'muted';
+  }
+
+  buildForm();
+</script>
 </body>
 </html>
