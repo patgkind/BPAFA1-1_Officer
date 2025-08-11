@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Token Login</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-bottom: 12px; box-sizing: border-box; }
+    button { padding: 8px 16px; cursor: pointer; }
+    .error { color: red; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Enter Access Token</h1>
+  <form id="tokenForm">
+    <label for="token">Access Token</label>
+    <input type="text" id="token" name="token" required />
+    <button type="submit">Login</button>
+    <div id="error" class="error"></div>
+  </form>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec"; // Replace with your Apps Script web app URL
+
+    document.getElementById('tokenForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = document.getElementById('token').value.trim();
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '';
+
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=verifyToken&token=' + encodeURIComponent(token));
+        const data = await res.json();
+
+        if (data.success) {
+          // Redirect to your main page, pass token if needed
+          window.location.href = 'main.html?token=' + encodeURIComponent(token);
+        } else {
+          errorDiv.textContent = data.message || 'Invalid token';
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Error connecting to server';
+      }
+    });
+  </script>
+</body>
+</html>
