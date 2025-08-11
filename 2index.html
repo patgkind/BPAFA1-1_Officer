@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BPAFA 1-1 Officer Election Login</title>
+<style>
+  body { font-family: system-ui, sans-serif; padding: 18px; max-width: 520px; margin: auto; }
+  input, button { width: 100%; padding: 10px; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
+  .msg { margin-top: 12px; font-weight: 600; }
+  .err { color: #b00020; }
+  .ok { color: #0a7; }
+</style>
+</head>
+<body>
+  <h1>Enter Token</h1>
+  <input id="token" type="text" placeholder="Enter token" />
+  <button id="loginBtn">Login</button>
+  <div id="msg" class="msg"></div>
+
+<script>
+const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; // replace
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const token = document.getElementById('token').value.trim();
+  const msg = document.getElementById('msg');
+  msg.textContent = '';
+  msg.className = 'msg';
+
+  if (!token) {
+    msg.textContent = 'Please enter a token';
+    msg.classList.add('err');
+    return;
+  }
+
+  document.getElementById('loginBtn').disabled = true;
+  msg.textContent = 'Verifying...';
+
+  try {
+    const url = `${WEBAPP}?action=verifyToken&token=${encodeURIComponent(token)}`;
+    const res = await fetch(url, { method: 'GET' });
+    const data = await res.json();
+    if (data.success) {
+      msg.textContent = 'Token valid, redirecting...';
+      msg.classList.add('ok');
+      
+      setTimeout(() => location.href = 'nomination.html?token=' + encodeURIComponent(token), 600);
+    } else {
+      msg.textContent = data.message || 'Invalid token';
+      msg.classList.add('err');
+      document.getElementById('loginBtn').disabled = false;
+    }
+  } catch (err) {
+    msg.textContent = 'Error connecting to server';
+    msg.classList.add('err');
+    document.getElementById('loginBtn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
