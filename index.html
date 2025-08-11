@@ -44,7 +44,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       msg.textContent = 'Token valid, redirecting...';
       msg.classList.add('ok');
       // redirect to nomination page, pass token if you need it
-      setTimeout(() => location.href = 'index.html?token=' + encodeURIComponent(token), 600);
+      setTimeout(() => location.href = 'nomination.html?token=' + encodeURIComponent(token), 600);
     } else {
       msg.textContent = data.message || 'Invalid token';
       msg.classList.add('err');
