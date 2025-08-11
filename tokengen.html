@@ -10,7 +10,7 @@
       max-width: 400px;
       margin: auto;
     }
-    input, button, textarea {
+    button, textarea {
       width: 100%;
       font-size: 1rem;
       margin-top: 12px;
@@ -26,12 +26,14 @@
 </head>
 <body>
   <h1>Token Generator</h1>
-  
+
   <button id="generateBtn">Generate Token</button>
-  
+
   <textarea id="output" readonly placeholder="Your token will appear here..."></textarea>
-  
+
   <script>
+    const webAppUrl = '<<YOUR_WEBAPP_URL_HERE>>'; // Replace this with your deployed Apps Script URL
+
     function generateToken(length = 8) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       let token = '';
@@ -40,14 +42,34 @@
       }
       return token;
     }
-    
+
+    async function saveToken(token) {
+      try {
+        const res = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Token saved successfully!');
+        } else {
+          alert('Failed to save token: ' + data.message);
+        }
+      } catch (err) {
+        alert('Error saving token: ' + err.message);
+      }
+    }
+
     const btn = document.getElementById('generateBtn');
     const output = document.getElementById('output');
-    
-    btn.addEventListener('click', () => {
+
+    btn.addEventListener('click', async () => {
       const token = generateToken(8);
       output.value = token;
-      btn.disabled = true;   // lock button
+      btn.disabled = true; // lock button
+
+      await saveToken(token);
     });
   </script>
 </body>
