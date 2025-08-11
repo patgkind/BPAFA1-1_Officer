@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Token Generator</title>
+  <title>Single Token Generator</title>
   <style>
     body {
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
@@ -18,20 +18,18 @@
       box-sizing: border-box;
     }
     textarea {
-      height: 150px;
+      height: 50px;
       font-family: monospace;
-      resize: vertical;
+      resize: none;
     }
   </style>
 </head>
 <body>
   <h1>Token Generator</h1>
   
-  <input type="number" id="tokenCount" placeholder="Enter number of tokens" min="1" max="1000" />
+  <button id="generateBtn">Generate Token</button>
   
-  <button id="generateBtn">Generate Tokens</button>
-  
-  <textarea id="output" readonly placeholder="Tokens will appear here..."></textarea>
+  <textarea id="output" readonly placeholder="Your token will appear here..."></textarea>
   
   <script>
     function generateToken(length = 8) {
@@ -43,19 +41,13 @@
       return token;
     }
     
-    document.getElementById('generateBtn').addEventListener('click', () => {
-      const count = parseInt(document.getElementById('tokenCount').value);
-      if (!count || count < 1 || count > 1000) {
-        alert('Please enter a number between 1 and 1000');
-        return;
-      }
-      
-      const tokens = new Set();
-      while (tokens.size < count) {
-        tokens.add(generateToken(8)); // fixed length 8 chars
-      }
-      
-      document.getElementById('output').value = Array.from(tokens).join('\n');
+    const btn = document.getElementById('generateBtn');
+    const output = document.getElementById('output');
+    
+    btn.addEventListener('click', () => {
+      const token = generateToken(8);
+      output.value = token;
+      btn.disabled = true;   // lock button
     });
   </script>
 </body>
