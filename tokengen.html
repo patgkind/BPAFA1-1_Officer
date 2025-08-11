@@ -3,68 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Token Generator</title>
+  <title>Generate Token</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      padding: 18px;
-      max-width: 760px;
-      margin: auto;
-    }
-    h1 { margin-bottom: 16px; }
-    label { display: block; margin: 12px 0 6px; font-weight: bold; }
-    input[type=text] {
-      padding: 8px;
-      width: 100%;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 12px;
-      padding: 10px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      background: #007BFF;
-      color: white;
-      border-radius: 4px;
-    }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    .message { margin-top: 16px; font-weight: bold; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
+    h1 { margin-bottom: 12px; }
+    .form-group { margin-bottom: 14px; }
+    input[type="text"] { width: 100%; padding: 10px; font-size: 16px; }
+    button { padding: 10px 16px; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1>Token</h1>
-  <label for="token">Enter Token</label>
-  <input type="text" id="token" placeholder="Enter your token" />
-  <button id="lockBtn">Lock Token</button>
-  <div class="message" id="message"></div>
+  <h1>Generate Token</h1>
+  <div class="form-group">
+    <input type="text" id="tokenBox" readonly placeholder="Your token will appear here" />
+  </div>
+  <button onclick="generateToken()">Generate Token</button>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=token"; // token.gs URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=token";
 
-    document.getElementById('lockBtn').addEventListener('click', () => {
-      const token = document.getElementById('token').value.trim();
-      if (!token) {
-        document.getElementById('message').textContent = "Please enter a token";
-        return;
-      }
+    function generateToken() {
+      // Generate random token
+      const token = Math.random().toString(36).substr(2, 8).toUpperCase();
+      document.getElementById('tokenBox').value = token;
+
+      // Save token to backend
       fetch(SCRIPT_URL, {
-        method: "POST",
-        body: new URLSearchParams({ action: "lockToken", token })
+        method: 'POST',
+        body: new URLSearchParams({
+          action: 'token',
+          token: token
+        })
       })
       .then(res => res.text())
-      .then(msg => {
-        document.getElementById('message').textContent = msg;
-        if (msg.includes("locked")) {
-          document.getElementById('token').disabled = true;
-          document.getElementById('lockBtn').disabled = true;
-        }
-      })
-      .catch(err => {
-        document.getElementById('message').textContent = "Error: " + err;
-      });
-    });
+      .then(msg => alert(msg))
+      .catch(err => alert('Error: ' + err));
+    }
   </script>
 </body>
 </html>
