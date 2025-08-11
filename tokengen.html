@@ -1,49 +1,50 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Token Generator</title>
-  <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    button { padding: 10px 20px; font-size: 1rem; cursor: pointer; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    #result { margin-top: 15px; font-weight: bold; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Generate Token</title>
+<style>
+  body { font-family: system-ui, sans-serif; padding: 18px; max-width: 520px; margin: auto; }
+  button, input { width: 100%; padding: 10px; font-size: 16px; margin-top: 8px; box-sizing: border-box; }
+  button[disabled] { background:#ccc; cursor:not-allowed; }
+  .info { margin-top:12px; font-weight:600; }
+</style>
 </head>
 <body>
+  <h1>Generate Token</h1>
+  <input id="tokenBox" type="text" readonly placeholder="Token will appear here" />
+  <button id="generateBtn">Generate Token</button>
+  <div id="info" class="info"></div>
 
-  <h1>Access Token</h1>
-  <button id="generateTokenBtn">Generate Token</button>
-  <div id="result"></div>
+<script>
+const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; // replace
 
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=generateToken"; 
+const btn = document.getElementById('generateBtn');
+const tokenBox = document.getElementById('tokenBox');
+const info = document.getElementById('info');
 
-    document.getElementById('generateTokenBtn').addEventListener('click', async function () {
-      const btn = this;
-      btn.disabled = true;
-      document.getElementById('result').textContent = "Generating token...";
-
-      try {
-        const res = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: new URLSearchParams({ action: "generateToken" })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          document.getElementById('result').textContent = "Your token: " + data.token;
-        } else {
-          document.getElementById('result').textContent = "Error: " + (data.message || "Unknown error");
-          btn.disabled = false; // re-enable if failed
-        }
-      } catch (err) {
-        document.getElementById('result').textContent = "Request failed.";
-        btn.disabled = false; // re-enable if failed
-      }
+btn.addEventListener('click', async () => {
+  btn.disabled = true; // lock immediately for this page load
+  info.textContent = 'Generating...';
+  try {
+    const res = await fetch(WEBAPP, {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'generateToken' })
     });
-  </script>
-
+    const data = await res.json();
+    if (data.success) {
+      tokenBox.value = data.token;
+      info.textContent = 'Token generated and saved';
+    } else {
+      info.textContent = data.message || 'Failed to generate token';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    info.textContent = 'Request failed';
+    btn.disabled = false;
+  }
+});
+</script>
 </body>
 </html>
