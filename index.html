@@ -90,14 +90,14 @@
   const container = document.getElementById('positionsContainer');
   const datalist = document.getElementById('nameSuggestions');
 
-  // Populate datalist options
+  // Fill datalist options for autocomplete
   NAME_SUGGESTIONS.forEach(name => {
     const option = document.createElement('option');
     option.value = name;
     datalist.appendChild(option);
   });
 
-  // Build form fields dynamically
+  // Create input fields for each position
   POSITIONS.forEach(pos => {
     const card = document.createElement('div');
     card.className = 'card';
@@ -138,7 +138,7 @@
     return false;
   }
 
-  form.addEventListener('submit', async ev => {
+  form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     setStatus('', 'muted');
 
@@ -159,7 +159,9 @@
     setStatus('Submitting...', 'muted');
 
     const formData = new URLSearchParams();
-    POSITIONS.forEach((pos, i) => formData.append(pos, values[i]));
+    POSITIONS.forEach((pos, i) => {
+      formData.append(pos, values[i]);
+    });
 
     try {
       const resp = await fetch(SCRIPT_URL, {
@@ -167,9 +169,10 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData.toString(),
       });
+
       const text = await resp.text();
 
-      if (text === 'Success') {
+      if (text === 'Success' || text.includes('Nomination submitted')) {
         setStatus('Nominations submitted, thank you', 'success');
         submitBtn.disabled = true;
       } else {
