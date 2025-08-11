@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Token Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 400px;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    label, input, button {
+      display: block;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Token Generator</h2>
+  <label for="tokenCount">Number of tokens:</label>
+  <input type="number" id="tokenCount" value="10" min="1" max="1000" />
+  
+  <label for="tokenLength">Length of each token:</label>
+  <input type="number" id="tokenLength" value="8" min="4" max="32" />
+  
+  <button id="generateBtn">Generate Tokens</button>
+  
+  <textarea id="output" readonly placeholder="Generated tokens will appear here..."></textarea>
+  
+  <script>
+    function generateToken(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      for(let i = 0; i < length; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return token;
+    }
+    
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      const count = parseInt(document.getElementById('tokenCount').value);
+      const length = parseInt(document.getElementById('tokenLength').value);
+      const tokens = new Set();
+      
+      while(tokens.size < count) {
+        tokens.add(generateToken(length));
+      }
+      
+      document.getElementById('output').value = Array.from(tokens).join('\n');
+    });
+  </script>
+</body>
+</html>
