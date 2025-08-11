@@ -67,58 +67,23 @@
 
 <script>
   const NAME_SUGGESTIONS = [
-    "Princess Erika Aguanza",
-    "Eric Jan Helterbrand Ancheta",
-    "Reziel Ante",
-    "Krys Nicole Barlizo",
-    "Ronald Justin Bautista",
-    "Antonio Bello",
-    "Romielyn Cano",
-    "Gerlyn Catibog",
-    "Ma. Fatima Catungal",
-    "Jessadel Codillo",
-    "Gemelie Combis",
-    "Ma. Sofia De Guzman",
-    "Yvonne Deguera",
-    "Jake Dela Cruz",
-    "Ma. Regine Dela Cruz",
-    "Marvin Joyce Diño",
-    "Apelina Disuyo",
-    "Dave Dominguez",
-    "Ma. Victoria Rosalina Ebrada",
-    "Gizelle Joy Ellado",
-    "Carlo Martin Garcia",
-    "Kathleen Gatela",
-    "Stephen Andrew Handog",
-    "Rene Jushua Ilagan",
-    "Michelle Laguna",
-    "Dhenzel Luansing",
-    "Judilyn Masibag",
-    "Jennifer Narral",
-    "Ed Operario",
-    "Jessica Pabillon",
-    "Christine Joy Palattao",
-    "Cristina Ramos",
-    "Ma. Editha Rance",
-    "Joanne Recella",
-    "Karmela Chelein Reyes",
-    "Mary Joy Ricalcar",
-    "May Salangsang",
-    "Mariel Sebulba",
-    "Angelou Silvestre",
-    "Rie Mie Tandoy",
-    "Ma. Editha Umali",
-    "Hannah Mae Valles",
-    "Jose Velasco Jr.",
-    "Christian Victoria",
-    "Brigette Villegas",
-    "Sara Isabel Yap"
+    "Princess Erika Aguanza","Eric Jan Helterbrand Ancheta","Reziel Ante","Krys Nicole Barlizo",
+    "Ronald Justin Bautista","Antonio Bello","Romielyn Cano","Gerlyn Catibog","Ma. Fatima Catungal",
+    "Jessadel Codillo","Gemelie Combis","Ma. Sofia De Guzman","Yvonne Deguera","Jake Dela Cruz",
+    "Ma. Regine Dela Cruz","Marvin Joyce Diño","Apelina Disuyo","Dave Dominguez",
+    "Ma. Victoria Rosalina Ebrada","Gizelle Joy Ellado","Carlo Martin Garcia","Kathleen Gatela",
+    "Stephen Andrew Handog","Rene Jushua Ilagan","Michelle Laguna","Dhenzel Luansing",
+    "Judilyn Masibag","Jennifer Narral","Ed Operario","Jessica Pabillon","Christine Joy Palattao",
+    "Cristina Ramos","Ma. Editha Rance","Joanne Recella","Karmela Chelein Reyes","Mary Joy Ricalcar",
+    "May Salangsang","Mariel Sebulba","Angelou Silvestre","Rie Mie Tandoy","Ma. Editha Umali",
+    "Hannah Mae Valles","Jose Velasco Jr.","Christian Victoria","Brigette Villegas","Sara Isabel Yap"
   ];
 
   document.addEventListener('DOMContentLoaded', () => {
     const inputs = document.querySelectorAll('input.nominee-input');
     if (!inputs.length) return;
 
+    // Setup datalist for suggestions
     const datalist = document.createElement('datalist');
     datalist.id = 'nameSuggestionsList';
 
@@ -135,7 +100,7 @@
       input.setAttribute('autocomplete', 'off');
     });
 
-    // Submit handler example (adjust to your backend)
+    // Submit handler
     const form = document.getElementById('nominationForm');
     const status = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
@@ -147,7 +112,7 @@
       status.className = 'muted';
 
       const formData = new URLSearchParams();
-      formData.append('action', 'nomination');
+      formData.append('action', 'submitNomination');  // backend expects this exact action
       inputs.forEach(input => {
         formData.append(input.name, input.value.trim());
       });
@@ -159,14 +124,15 @@
           body: formData.toString()
         });
 
-        const text = await resp.text();
+        const json = await resp.json();
 
-        if (text.includes('successfully')) {
-          status.textContent = 'Nomination submitted successfully.';
+        if (json.success) {
+          status.textContent = json.message || 'Nomination submitted successfully.';
           status.className = 'success';
           submitBtn.disabled = true;
+          form.reset();
         } else {
-          status.textContent = 'Server error: ' + text;
+          status.textContent = 'Server error: ' + (json.message || 'Unknown error');
           status.className = 'error';
           submitBtn.disabled = false;
         }
