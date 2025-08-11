@@ -16,12 +16,12 @@
         const resp = await fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit');
         const data = await resp.json();
         if (data.success) {
-          document.getElementById('visitCount').textContent = `Visit count: ${data.count}`;
+         
         } else {
-          document.getElementById('visitCount').textContent = `Failed to get visit count.`;
+          
         }
       } catch (e) {
-        document.getElementById('visitCount').textContent = `Error fetching visit count.`;
+        
       }
     }
 
