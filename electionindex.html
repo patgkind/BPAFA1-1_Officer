@@ -1,88 +1,172 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Election</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BPAFA 1-1 Officer Election</title>
 <style>
-  body { font-family: system-ui, sans-serif; padding: 18px; max-width: 760px; margin: auto; }
-  label { display:block; margin-top:12px; font-weight:600; }
-  select, button { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
-  .msg { margin-top:12px; font-weight:600; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
+  h1 { margin-bottom: 6px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  select {
+    width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
+    appearance: none;
+  }
+  button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
+  button[disabled] { opacity:0.6; cursor:not-allowed; }
+  .success { color:green; margin-top:10px; }
+  .error { color:#b00020; margin-top:10px; }
+  .muted { color:#666; font-size:0.9em; }
 </style>
 </head>
 <body>
-  <h1>Election Ballot</h1>
-  <form id="voteForm">
-    <!-- Dropdowns will be injected here -->
-    <div id="fields"></div>
-    <button type="submit">Submit Vote</button>
+  <h1>BPAFA 1-1 Officer Election</h1>
+  <p class="muted">Select your chosen nominee for each position, then submit once.</p>
+
+  <form id="electionForm" autocomplete="off">
+    <div id="positionsContainer"></div>
+    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+      <button id="submitBtn" type="submit" disabled>Loading nominees...</button>
+      <div id="status" class="muted"></div>
+    </div>
   </form>
-  <div id="msg" class="msg"></div>
 
 <script>
-const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; // replace
-const POSITIONS = ['President','Vice President','Secretary','Treasurer','Auditor','P.I.O','Pubmat 1','Pubmat 2'];
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=election';
+  const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
-async function loadNamesFor(position) {
-  const url = `${WEBAPP}?action=getNames&position=${encodeURIComponent(position)}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  return (data.names || []);
-}
+  const container = document.getElementById('positionsContainer');
+  const form = document.getElementById('electionForm');
+  const status = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
 
-async function buildForm() {
-  const container = document.getElementById('fields');
-  container.innerHTML = '';
-  for (const pos of POSITIONS) {
+  // Store loaded options by position
+  const positionOptions = {};
+
+  // Helper: create select dropdown for a position with options
+  function createDropdown(position, options) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
     const label = document.createElement('label');
-    label.textContent = pos;
-    const sel = document.createElement('select');
-    sel.name = pos;
-    sel.required = true;
-    const opts = await loadNamesFor(pos);
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = '-- choose --';
-    sel.appendChild(placeholder);
-    for (const name of opts) {
-      const o = document.createElement('option'); o.value = name; o.textContent = name;
-      sel.appendChild(o);
-    }
-    container.appendChild(label);
-    container.appendChild(sel);
+    label.textContent = position + ' *';
+
+    const select = document.createElement('select');
+    select.name = position;
+    select.required = true;
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = '-- Select nominee --';
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+
+    options.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+
+    card.appendChild(label);
+    card.appendChild(select);
+    return card;
   }
-}
 
-document.getElementById('voteForm').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const form = ev.target;
-  const fd = new FormData(form);
-  const body = new URLSearchParams();
-  body.append('action', 'submitElection');
-  for (const pair of fd.entries()) body.append(pair[0], pair[1]);
+  // Load nominees for all positions sequentially
+  async function loadNominees() {
+    submitBtn.disabled = true;
+    status.textContent = 'Loading nominees...';
 
-  const btn = form.querySelector('button[type=submit]');
-  btn.disabled = true;
-  document.getElementById('msg').textContent = 'Submitting...';
+    try {
+      for (const pos of POSITIONS) {
+        const url = `${SCRIPT_URL}?action=getNames&position=${encodeURIComponent(pos)}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Failed to fetch nominees for ${pos}`);
+        const names = await resp.json();
+        positionOptions[pos] = names;
+      }
 
-  try {
-    const res = await fetch(WEBAPP, { method: 'POST', body });
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById('msg').textContent = data.message || 'Vote recorded';
-      form.reset();
-    } else {
-      document.getElementById('msg').textContent = data.message || 'Error recording vote';
+      container.innerHTML = '';
+      for (const pos of POSITIONS) {
+        container.appendChild(createDropdown(pos, positionOptions[pos]));
+      }
+
+      status.textContent = '';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit votes';
+
+    } catch (err) {
+      status.textContent = 'Error loading nominees: ' + err.message;
+      status.className = 'error';
     }
-  } catch (err) {
-    document.getElementById('msg').textContent = 'Request failed';
-  } finally {
-    btn.disabled = false;
   }
-});
 
-buildForm();
+  // Check duplicate selections on submit
+  function hasDuplicates(arr) {
+    const lowered = arr.map(s => s.toLowerCase().trim());
+    return new Set(lowered).size !== lowered.length;
+  }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    status.textContent = '';
+    status.className = 'muted';
+
+    const selects = Array.from(form.querySelectorAll('select'));
+    const values = selects.map(s => s.value);
+
+    if (values.includes('')) {
+      status.textContent = 'Please select nominees for all positions.';
+      status.className = 'error';
+      return;
+    }
+
+    if (hasDuplicates(values)) {
+      status.textContent = 'Duplicate nominee selected for multiple positions.';
+      status.className = 'error';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    status.textContent = 'Submitting votes...';
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'election');
+    POSITIONS.forEach((pos, i) => {
+      formData.append(pos, values[i]);
+    });
+
+    try {
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+      });
+
+      const text = await resp.text();
+
+      if (text === 'Success') {
+        status.textContent = 'Votes submitted successfully. Thank you!';
+        status.className = 'success';
+        submitBtn.disabled = true;
+      } else {
+        status.textContent = 'Server error: ' + text;
+        status.className = 'error';
+        submitBtn.disabled = false;
+      }
+
+    } catch (err) {
+      status.textContent = 'Network error: ' + err.message;
+      status.className = 'error';
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Initialize
+  loadNominees();
 </script>
 </body>
 </html>

@@ -1,67 +1,182 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Nomination</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BPAFA 1-1 Officer Nomination</title>
 <style>
-  body { font-family: system-ui, sans-serif; padding: 18px; max-width: 680px; margin: auto; }
-  label { display:block; margin-top:12px; font-weight:600; }
-  input, button { width:100%; padding:10px; font-size:16px; margin-top:6px; box-sizing:border-box; }
-  .msg { margin-top:12px; font-weight:600; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
+  h1 { margin-bottom: 6px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #d0d0d0;
+    box-sizing: border-box;
+  }
+  button { padding: 10px 14px; border-radius: 8px; background: #1976d2; color: white; border: none; cursor: pointer; font-weight: 600; }
+  button[disabled] { opacity: 0.6; cursor: not-allowed; }
+  .success { color: green; margin-top: 10px; }
+  .error { color: #b00020; margin-top: 10px; }
+  .muted { color: #666; font-size: 0.9em; }
 </style>
 </head>
 <body>
-  <h1>Nomination Form</h1>
-  <form id="nomForm">
-    <!-- Inputs for each position -->
-    <label>President<input name="President" /></label>
-    <label>Vice President<input name="Vice President" /></label>
-    <label>Secretary<input name="Secretary" /></label>
-    <label>Treasurer<input name="Treasurer" /></label>
-    <label>Auditor<input name="Auditor" /></label>
-    <label>P.I.O<input name="P.I.O" /></label>
-    <label>Pubmat 1<input name="Pubmat 1" /></label>
-    <label>Pubmat 2<input name="Pubmat 2" /></label>
+  <h1>BPAFA 1-1 Officer Nomination</h1>
+  <p class="muted">Type nominee names for each position, suggestions will appear as you type.</p>
 
-    <button type="submit">Submit Nomination</button>
+  <form id="nominationForm" autocomplete="off">
+    <div class="card">
+      <label for="President">President *</label>
+      <input name="President" id="President" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="VicePresident">Vice President *</label>
+      <input name="Vice President" id="VicePresident" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="Secretary">Secretary *</label>
+      <input name="Secretary" id="Secretary" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="Treasurer">Treasurer *</label>
+      <input name="Treasurer" id="Treasurer" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="Auditor">Auditor *</label>
+      <input name="Auditor" id="Auditor" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="PIO">P.I.O *</label>
+      <input name="P.I.O" id="PIO" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="Pubmat1">Pubmat 1 *</label>
+      <input name="Pubmat 1" id="Pubmat1" class="nominee-input" type="text" required />
+    </div>
+    <div class="card">
+      <label for="Pubmat2">Pubmat 2 *</label>
+      <input name="Pubmat 2" id="Pubmat2" class="nominee-input" type="text" required />
+    </div>
+
+    <button type="submit" id="submitBtn">Submit Nomination</button>
+    <div id="status" class="muted"></div>
   </form>
 
-  <div id="msg" class="msg"></div>
-
 <script>
-const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; // replace
+  const NAME_SUGGESTIONS = [
+    "Princess Erika Aguanza",
+    "Eric Jan Helterbrand Ancheta",
+    "Reziel Ante",
+    "Krys Nicole Barlizo",
+    "Ronald Justin Bautista",
+    "Antonio Bello",
+    "Romielyn Cano",
+    "Gerlyn Catibog",
+    "Ma. Fatima Catungal",
+    "Jessadel Codillo",
+    "Gemelie Combis",
+    "Ma. Sofia De Guzman",
+    "Yvonne Deguera",
+    "Jake Dela Cruz",
+    "Ma. Regine Dela Cruz",
+    "Marvin Joyce Diño",
+    "Apelina Disuyo",
+    "Dave Dominguez",
+    "Ma. Victoria Rosalina Ebrada",
+    "Gizelle Joy Ellado",
+    "Carlo Martin Garcia",
+    "Kathleen Gatela",
+    "Stephen Andrew Handog",
+    "Rene Jushua Ilagan",
+    "Michelle Laguna",
+    "Dhenzel Luansing",
+    "Judilyn Masibag",
+    "Jennifer Narral",
+    "Ed Operario",
+    "Jessica Pabillon",
+    "Christine Joy Palattao",
+    "Cristina Ramos",
+    "Ma. Editha Rance",
+    "Joanne Recella",
+    "Karmela Chelein Reyes",
+    "Mary Joy Ricalcar",
+    "May Salangsang",
+    "Mariel Sebulba",
+    "Angelou Silvestre",
+    "Rie Mie Tandoy",
+    "Ma. Editha Umali",
+    "Hannah Mae Valles",
+    "Jose Velasco Jr.",
+    "Christian Victoria",
+    "Brigette Villegas",
+    "Sara Isabel Yap"
+  ];
 
-document.getElementById('nomForm').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const form = ev.target;
-  const formData = new FormData(form);
-  const body = new URLSearchParams();
-  body.append('action', 'submitNomination');
-  // append values; backend uses headers in Responses sheet to match keys
-  for (const pair of formData.entries()) {
-    body.append(pair[0], pair[1]);
-  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('input.nominee-input');
+    if (!inputs.length) return;
 
-  const btn = form.querySelector('button[type=submit]');
-  btn.disabled = true;
-  document.getElementById('msg').textContent = 'Submitting...';
+    const datalist = document.createElement('datalist');
+    datalist.id = 'nameSuggestionsList';
 
-  try {
-    const res = await fetch(WEBAPP, { method: 'POST', body });
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById('msg').textContent = data.message || 'Submitted';
-      form.reset();
-    } else {
-      document.getElementById('msg').textContent = data.message || 'Error';
-    }
-  } catch (err) {
-    document.getElementById('msg').textContent = 'Request failed';
-  } finally {
-    btn.disabled = false;
-  }
-});
+    NAME_SUGGESTIONS.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      datalist.appendChild(option);
+    });
+
+    document.body.appendChild(datalist);
+
+    inputs.forEach(input => {
+      input.setAttribute('list', 'nameSuggestionsList');
+      input.setAttribute('autocomplete', 'off');
+    });
+
+    // Submit handler example (adjust to your backend)
+    const form = document.getElementById('nominationForm');
+    const status = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      submitBtn.disabled = true;
+      status.className = 'muted';
+
+      const formData = new URLSearchParams();
+      formData.append('action', 'nomination');
+      inputs.forEach(input => {
+        formData.append(input.name, input.value.trim());
+      });
+
+      try {
+        const resp = await fetch('YOUR_MAIN_GS_URL_HERE', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        });
+
+        const text = await resp.text();
+
+        if (text.includes('successfully')) {
+          status.textContent = 'Nomination submitted successfully.';
+          status.className = 'success';
+          submitBtn.disabled = true;
+        } else {
+          status.textContent = 'Server error: ' + text;
+          status.className = 'error';
+          submitBtn.disabled = false;
+        }
+      } catch (err) {
+        status.textContent = 'Network error: ' + err.message;
+        status.className = 'error';
+        submitBtn.disabled = false;
+      }
+    });
+  });
 </script>
 </body>
 </html>
