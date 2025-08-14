@@ -18,180 +18,190 @@
 </style>
 </head>
 <body>
-  <h1>BPAFA 1-1 Officer Election</h1>
-  <p class="muted">Select your chosen nominee for each position, then submit once.</p>
+<h1>BPAFA 1-1 Officer Election</h1>
+<p class="muted">Select your chosen nominee for each position, then submit once.</p>
 
-  <form id="electionForm" autocomplete="off">
-    <div id="positionsContainer"></div>
-    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-      <button id="submitBtn" type="submit" disabled>Loading nominees...</button>
-      <div id="status" class="muted"></div>
-    </div>
-  </form>
+<form id="electionForm" autocomplete="off" style="display:none;">
+  <div id="positionsContainer"></div>
+  <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+    <button id="submitBtn" type="submit" disabled>Loading nominees...</button>
+    <div id="status" class="muted"></div>
+  </div>
+</form>
 
 <script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
-  const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
+const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
-  const container = document.getElementById('positionsContainer');
-  const form = document.getElementById('electionForm');
-  const status = document.getElementById('status');
-  const submitBtn = document.getElementById('submitBtn');
+const container = document.getElementById('positionsContainer');
+const form = document.getElementById('electionForm');
+const status = document.getElementById('status');
+const submitBtn = document.getElementById('submitBtn');
 
+function getQueryToken() {
   const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+  return params.get('token')?.trim() || '';
+}
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    if (!token) {
-      location.href = 'token.html';
-      return;
-    }
+async function verifyToken(token) {
+  const resp = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${encodeURIComponent(token)}`);
+  const data = await resp.json();
+  return data; // { success, status, isVoted, message }
+}
 
-    try {
-      // Verify token
-      const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${encodeURIComponent(token)}`);
-      const data = await res.json();
+function createDropdown(position, options) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const label = document.createElement('label');
+  label.textContent = position + ' *';
+  const select = document.createElement('select');
+  select.name = position;
+  select.required = true;
 
-      if (!data.success) {
-        location.href = 'token.html';
-        return;
-      }
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = '-- Select nominee --';
+  placeholderOption.disabled = true;
+  placeholderOption.selected = true;
+  select.appendChild(placeholderOption);
 
-      if (String(data.status).toLowerCase() !== 'active') {
-        location.href = 'nom.html';
-        return;
-      }
-
-      if (String(data.isvoted).toLowerCase() === 'yes') {
-        location.href = 'thankyou.html';
-        return;
-      }
-
-      await loadNominees();
-    } catch (err) {
-      status.textContent = 'Verification failed, please try again.';
-      status.className = 'error';
-      submitBtn.disabled = true;
-    }
+  options.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
   });
 
-  function createDropdown(position, options) {
-    const card = document.createElement('div');
-    card.className = 'card';
+  card.appendChild(label);
+  card.appendChild(select);
+  return card;
+}
 
-    const label = document.createElement('label');
-    label.textContent = position + ' *';
+function hasDuplicates(arr) {
+  const lowered = arr.map(s => s.toLowerCase().trim());
+  return new Set(lowered).size !== lowered.length;
+}
 
-    const select = document.createElement('select');
-    select.name = position;
-    select.required = true;
+async function loadNominees() {
+  submitBtn.disabled = true;
+  status.textContent = 'Loading nominees...';
+  status.className = 'muted';
 
-    const placeholderOption = document.createElement('option');
-    placeholderOption.value = '';
-    placeholderOption.textContent = '-- Select nominee --';
-    placeholderOption.disabled = true;
-    placeholderOption.selected = true;
-    select.appendChild(placeholderOption);
+  try {
+    const resp = await fetch(`${SCRIPT_URL}?action=getAllNames`);
+    if (!resp.ok) throw new Error('Failed to fetch nominees list');
+    const data = await resp.json();
 
-    options.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
+    if (!data.success || !data.positions) throw new Error(data.message || 'No nominee data received');
+
+    container.innerHTML = '';
+    POSITIONS.forEach(pos => {
+      const nominees = data.positions[pos] || [];
+      container.appendChild(createDropdown(pos, nominees));
     });
 
-    card.appendChild(label);
-    card.appendChild(select);
-    return card;
-  }
-
-  async function loadNominees() {
-    submitBtn.disabled = true;
-    status.textContent = 'Loading nominees...';
-    status.className = 'muted';
-
-    try {
-      const resp = await fetch(`${SCRIPT_URL}?action=getAllNames`);
-      if (!resp.ok) throw new Error('Failed to fetch nominees list');
-      const data = await resp.json();
-
-      if (!data.success || !data.positions) {
-        throw new Error(data.message || 'No nominee data received');
-      }
-
-      container.innerHTML = '';
-      POSITIONS.forEach(pos => {
-        const nominees = data.positions[pos] || [];
-        container.appendChild(createDropdown(pos, nominees));
-      });
-
-      status.textContent = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit votes';
-
-    } catch (err) {
-      status.textContent = 'Error loading nominees: ' + err.message;
-      status.className = 'error';
-      submitBtn.disabled = true;
-    }
-  }
-
-  function hasDuplicates(arr) {
-    const lowered = arr.map(s => s.toLowerCase().trim());
-    return new Set(lowered).size !== lowered.length;
-  }
-
-  form.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
     status.textContent = '';
-    status.className = 'muted';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit votes';
 
-    const selects = Array.from(form.querySelectorAll('select'));
-    const values = selects.map(s => s.value);
-
-    if (values.includes('')) {
-      status.textContent = 'Please select nominees for all positions.';
-      status.className = 'error';
-      return;
-    }
-
-    if (hasDuplicates(values)) {
-      status.textContent = 'Duplicate nominee selected for multiple positions.';
-      status.className = 'error';
-      return;
-    }
-
+  } catch (err) {
+    status.textContent = 'Error loading nominees: ' + err.message;
+    status.className = 'error';
     submitBtn.disabled = true;
-    status.textContent = 'Submitting votes...';
+  }
+}
 
-    const formData = new URLSearchParams();
-    formData.append('action', 'submitElection');
-    formData.append('token', token); // send token to backend
-    POSITIONS.forEach((pos, i) => {
-      formData.append(pos, values[i]);
+async function initElection() {
+  const token = getQueryToken();
+  if (!token) {
+    alert('No token provided, redirecting to login');
+    window.location.href = 'token.html';
+    return;
+  }
+
+  status.textContent = 'Verifying token...';
+  const tokenData = await verifyToken(token);
+
+  if (!tokenData.success) {
+    alert(tokenData.message || 'Invalid token');
+    window.location.href = 'token.html';
+    return;
+  }
+
+  if (tokenData.status?.toLowerCase() !== 'active') {
+    window.location.href = 'nom.html';
+    return;
+  }
+
+  if (tokenData.isVoted === 'yes') {
+    window.location.href = 'thankyou.html';
+    return;
+  }
+
+  // Token valid & active & not voted
+  form.style.display = 'block';
+  await loadNominees();
+}
+
+form.addEventListener('submit', async ev => {
+  ev.preventDefault();
+  status.textContent = '';
+  status.className = 'muted';
+
+  const token = getQueryToken();
+  const selects = Array.from(form.querySelectorAll('select'));
+  const values = selects.map(s => s.value);
+
+  if (values.includes('')) {
+    status.textContent = 'Please select nominees for all positions.';
+    status.className = 'error';
+    return;
+  }
+
+  if (hasDuplicates(values)) {
+    status.textContent = 'Duplicate nominee selected for multiple positions.';
+    status.className = 'error';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  status.textContent = 'Submitting votes...';
+
+  const formData = new URLSearchParams();
+  formData.append('action', 'submitElection');
+  formData.append('token', token); // pass token for marking isVoted
+  POSITIONS.forEach((pos, i) => formData.append(pos, values[i]));
+
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString()
     });
 
-    try {
-      const resp = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString()
-      });
+    const text = await resp.text();
+    let jsonResp;
+    try { jsonResp = JSON.parse(text); } catch { throw new Error('Invalid server response'); }
 
-      const jsonResp = await resp.json();
-
-      if (jsonResp.success) {
-        location.href = 'thankyou.html';
-      } else {
-        throw new Error(jsonResp.message || 'Submission failed');
-      }
-
-    } catch (err) {
-      status.textContent = 'Server error: ' + err.message;
-      status.className = 'error';
-      submitBtn.disabled = false;
+    if (jsonResp.success) {
+      // Mark token as voted
+      await fetch(`${SCRIPT_URL}?action=markVoted&token=${encodeURIComponent(token)}`);
+      status.textContent = 'Votes submitted successfully. Thank you!';
+      status.className = 'success';
+      submitBtn.disabled = true;
+      setTimeout(() => window.location.href = 'thankyou.html', 1200);
+    } else {
+      throw new Error(jsonResp.message || 'Submission failed');
     }
-  });
+
+  } catch (err) {
+    status.textContent = 'Server error: ' + err.message;
+    status.className = 'error';
+    submitBtn.disabled = false;
+  }
+});
+
+window.addEventListener('DOMContentLoaded', initElection);
 </script>
 </body>
 </html>
