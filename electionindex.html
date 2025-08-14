@@ -1,37 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BPAFA 1-1 Officer Election</title>
-<style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding: 18px; max-width: 760px; margin: auto; }
-  h1 { margin-bottom: 6px; }
-  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
-  label { display:block; font-weight:600; margin-bottom:6px; }
-  select {
-    width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
-    appearance: none;
-  }
-  button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
-  button[disabled] { opacity:0.6; cursor:not-allowed; }
-  .success { color:green; margin-top:10px; }
-  .error { color:#b00020; margin-top:10px; }
-  .muted { color:#666; font-size:0.9em; }
-</style>
-</head>
-<body>
-  <h1>BPAFA 1-1 Officer Election</h1>
-  <p class="muted">Select your chosen nominee for each position, then submit once.</p>
-
-  <form id="electionForm" autocomplete="off">
-    <div id="positionsContainer"></div>
-    <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-      <button id="submitBtn" type="submit" disabled>Loading nominees...</button>
-      <div id="status" class="muted"></div>
-    </div>
-  </form>
-
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
   const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
@@ -44,6 +10,12 @@
   // Store loaded options by position
   const positionOptions = {};
 
+  /**
+   * Creates a dropdown card for a specific position with nominee options.
+   * @param {string} position - Name of the position (e.g., President).
+   * @param {Array} options - Array of nominee names for that position.
+   * @returns {HTMLElement} A card element containing the label and select dropdown.
+   */
   function createDropdown(position, options) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -74,6 +46,11 @@
     return card;
   }
 
+  /**
+   * Loads nominees for all positions from the backend (Google Apps Script).
+   * Disables the submit button while loading, displays errors if fetch fails.
+   * On success, populates the form with dropdowns for each position.
+   */
   async function loadNominees() {
     submitBtn.disabled = true;
     status.textContent = 'Loading nominees...';
@@ -107,11 +84,22 @@
     }
   }
 
+  /**
+   * Checks if an array has duplicate (case-insensitive) entries.
+   * @param {Array} arr - Array of strings to check.
+   * @returns {boolean} True if duplicates found, false otherwise.
+   */
   function hasDuplicates(arr) {
     const lowered = arr.map(s => s.toLowerCase().trim());
     return new Set(lowered).size !== lowered.length;
   }
 
+  /**
+   * Handles form submission for voting.
+   * Validates that all positions are selected and no duplicate nominees.
+   * Sends POST request to backend with vote data.
+   * Displays success or error messages based on server response.
+   */
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     status.textContent = '';
@@ -171,7 +159,6 @@
     }
   });
 
+  // Load nominees when the page is ready
   loadNominees();
 </script>
-</body>
-</html>
