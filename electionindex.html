@@ -30,11 +30,6 @@
 </form>
 
 <script>
-
-window.addEventListener('DOMContentLoaded', () => {
-  fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit')
-    .catch(() => {});
-
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec';
 const POSITIONS = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor', 'P.I.O', 'Pubmat 1', 'Pubmat 2'];
 
@@ -50,8 +45,7 @@ function getQueryToken() {
 
 async function verifyToken(token) {
   const resp = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${encodeURIComponent(token)}`);
-  const data = await resp.json();
-  return data; // { success, status, isVoted, message }
+  return resp.json();
 }
 
 function createDropdown(position, options) {
@@ -119,16 +113,17 @@ async function loadNominees() {
 async function initElection() {
   const token = getQueryToken();
   if (!token) {
-    alert('No token provided, redirecting to login');
     window.location.href = 'token.html';
     return;
   }
+
+  // silent visit counter
+  fetch(`${SCRIPT_URL}?action=visit`).catch(() => {});
 
   status.textContent = 'Verifying token...';
   const tokenData = await verifyToken(token);
 
   if (!tokenData.success) {
-    alert(tokenData.message || 'Invalid token');
     window.location.href = 'token.html';
     return;
   }
@@ -174,7 +169,7 @@ form.addEventListener('submit', async ev => {
 
   const formData = new URLSearchParams();
   formData.append('action', 'submitElection');
-  formData.append('token', token); // pass token for marking isVoted
+  formData.append('token', token);
   POSITIONS.forEach((pos, i) => formData.append(pos, values[i]));
 
   try {
@@ -184,9 +179,7 @@ form.addEventListener('submit', async ev => {
       body: formData.toString()
     });
 
-    const text = await resp.text();
-    let jsonResp;
-    try { jsonResp = JSON.parse(text); } catch { throw new Error('Invalid server response'); }
+    const jsonResp = await resp.json();
 
     if (jsonResp.success) {
       // Mark token as voted
