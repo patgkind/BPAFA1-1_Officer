@@ -12,67 +12,62 @@
 </style>
 </head>
 <body>
-  <h1>Generate Token</h1>
-  <input id="tokenBox" type="text" readonly placeholder="Token will appear here" />
-  <button id="generateBtn">Generate Token</button>
-  <div id="info" class="info"></div>
+<h1>Generate Token</h1>
+<input id="tokenBox" type="text" readonly placeholder="Token will appear here" />
+<button id="generateBtn">Generate Token</button>
+<div id="info" class="info"></div>
 
 <script>
 const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; 
+const btn = document.getElementById('generateBtn');
+const tokenBox = document.getElementById('tokenBox');
+const info = document.getElementById('info');
 
 function getCookie(name) {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  for(let i=0;i < ca.length;i++) {
-    let c = ca[i];
-    while (c.charAt(0)==' ') c = c.substring(1,c.length);
-    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-  }
-  return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
 }
 
-const existingToken = getCookie('bpa_token');
-if (existingToken) {
-  document.body.innerHTML = '';
-  const msgDiv = document.createElement('div');
-  msgDiv.style.textAlign = 'center';
-  msgDiv.style.marginTop = '50px';
-  msgDiv.innerHTML = `<h1>Token already generated</h1>
-                      <p>Your token: <strong>${existingToken}</strong></p>`;
-  document.body.appendChild(msgDiv);
-} else {
-  const btn = document.getElementById('generateBtn');
-  const tokenBox = document.getElementById('tokenBox');
-  const info = document.getElementById('info');
+function showToken(token) {
+  tokenBox.value = token;
+  info.textContent = 'Your token already generated';
+  btn.style.display = 'none';
+}
 
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    info.textContent = 'Generating...';
+document.addEventListener('DOMContentLoaded', () => {
+  const existingToken = getCookie('bpa_token');
+  if (existingToken) {
+    showToken(existingToken);
+  }
+});
 
-    try {
-      const res = await fetch(WEBAPP, {
-        method: 'POST',
-        body: new URLSearchParams({ action: 'generateToken' })
-      });
-      const data = await res.json();
+btn.addEventListener('click', async () => {
+  btn.disabled = true;
+  info.textContent = 'Generating...';
 
-      if (data.success) {
-        tokenBox.value = data.token;
-        info.textContent = 'Token generated and saved';
+  try {
+    const res = await fetch(WEBAPP, {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'generateToken' })
+    });
+    const data = await res.json();
 
-        // Optional: set cookie for token with expiration
-        // document.cookie = `bpa_token=${data.token}; path=/; max-age=3600; SameSite=Lax;`; //1 day = 86400
-        // You can adjust max-age to control expiration time
-      } else {
-        info.textContent = data.message || 'Failed to generate token';
-        btn.disabled = false;
-      }
-    } catch (err) {
-      info.textContent = 'Request failed';
+    if (data.success) {
+      tokenBox.value = data.token;
+      info.textContent = 'Token generated and saved';
+      
+      // Optional: set cookie for token with expiration 
+      // document.cookie = `bpa_token=${data.token}; path=/; max-age=3600; SameSite=Lax;`; 
+      // You can adjust max-age to control expiration time
+    } else {
+      info.textContent = data.message || 'Failed to generate token';
       btn.disabled = false;
     }
-  });
-}
+  } catch (err) {
+    info.textContent = 'Request failed';
+    btn.disabled = false;
+  }
+});
 </script>
 </body>
 </html>
