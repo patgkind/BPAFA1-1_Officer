@@ -113,7 +113,7 @@ async function loadNominees() {
 async function initElection() {
   const token = getQueryToken();
   if (!token) {
-    window.location.href = 'token.html';
+    window.location.href = 'index.html'; // redirect if no token
     return;
   }
 
@@ -124,7 +124,7 @@ async function initElection() {
   const tokenData = await verifyToken(token);
 
   if (!tokenData.success) {
-    window.location.href = 'token.html';
+    window.location.href = 'index.html';
     return;
   }
 
