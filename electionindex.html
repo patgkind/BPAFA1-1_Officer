@@ -44,6 +44,11 @@
   // Store loaded options by position
   const positionOptions = {};
 
+    window.addEventListener('DOMContentLoaded', () => {
+    fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit')
+      .catch(() => {});
+  });
+
   function createDropdown(position, options) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -170,7 +175,7 @@
       submitBtn.disabled = false;
     }
   });
-incrementSubmissionCounter();
+
   loadNominees();
 </script>
 </body>
