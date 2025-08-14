@@ -41,12 +41,10 @@
   const status = document.getElementById('status');
   const submitBtn = document.getElementById('submitBtn');
 
-  // Store loaded options by position
-  const positionOptions = {};
-
-    window.addEventListener('DOMContentLoaded', () => {
-    fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit')
-      .catch(() => {});
+  // Fire visit counter once page loads
+  window.addEventListener('DOMContentLoaded', () => {
+    fetch(`${SCRIPT_URL}?action=visit`).catch(() => {});
+    loadNominees();
   });
 
   function createDropdown(position, options) {
@@ -85,21 +83,15 @@
     status.className = 'muted';
 
     try {
-      for (const pos of POSITIONS) {
-        const url = `${SCRIPT_URL}?action=getNames&position=${encodeURIComponent(pos)}`;
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Failed to fetch nominees for ${pos}`);
-        const data = await resp.json();
-
-        if (!data.success) throw new Error(data.message || `Failed to load nominees for ${pos}`);
-
-        positionOptions[pos] = data.names || [];
-      }
+      const resp = await fetch(`${SCRIPT_URL}?action=getAllNominees`);
+      if (!resp.ok) throw new Error('Failed to fetch nominees');
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.message || 'Nominee load failed');
 
       container.innerHTML = '';
-      for (const pos of POSITIONS) {
-        container.appendChild(createDropdown(pos, positionOptions[pos]));
-      }
+      POSITIONS.forEach(pos => {
+        container.appendChild(createDropdown(pos, data.data[pos] || []));
+      });
 
       status.textContent = '';
       submitBtn.disabled = false;
@@ -141,7 +133,7 @@
     status.textContent = 'Submitting votes...';
 
     const formData = new URLSearchParams();
-    formData.append('action', 'submitElection'); // Correct action name
+    formData.append('action', 'submitElection');
     POSITIONS.forEach((pos, i) => {
       formData.append(pos, values[i]);
     });
@@ -153,14 +145,7 @@
         body: formData.toString()
       });
 
-      const text = await resp.text();
-      let jsonResp;
-      try {
-        jsonResp = JSON.parse(text);
-      } catch {
-        throw new Error('Invalid server response');
-      }
-
+      const jsonResp = await resp.json();
       if (jsonResp.success) {
         status.textContent = 'Votes submitted successfully. Thank you!';
         status.className = 'success';
@@ -175,8 +160,6 @@
       submitBtn.disabled = false;
     }
   });
-
-  loadNominees();
 </script>
 </body>
 </html>
