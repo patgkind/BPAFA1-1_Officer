@@ -19,7 +19,7 @@
   <div id="msg" class="msg"></div>
 
 <script>
-const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; // replace
+const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; 
 
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const token = document.getElementById('token').value.trim();
@@ -38,13 +38,23 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
   try {
     const url = `${WEBAPP}?action=verifyToken&token=${encodeURIComponent(token)}`;
-    const res = await fetch(url, { method: 'GET' });
+    const res = await fetch(url);
     const data = await res.json();
+
     if (data.success) {
-      msg.textContent = 'Token valid, redirecting...';
-      msg.classList.add('ok');
-      
-      setTimeout(() => location.href = 'nomination.html?token=' + encodeURIComponent(token), 600);
+      if (data.status && data.status.toLowerCase() === 'active') {
+        msg.textContent = 'Token valid, redirecting...';
+        msg.classList.add('ok');
+        setTimeout(() => {
+          location.href = 'electionindex.html?token=' + encodeURIComponent(token);
+        }, 600);
+      } else {
+        msg.textContent = 'Token inactive, redirecting...';
+        msg.classList.add('err');
+        setTimeout(() => {
+          location.href = 'nom.html';
+        }, 800);
+      }
     } else {
       msg.textContent = data.message || 'Invalid token';
       msg.classList.add('err');
