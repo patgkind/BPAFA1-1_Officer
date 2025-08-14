@@ -18,7 +18,6 @@
   <div id="info" class="info"></div>
 
 <script>
-  
 const WEBAPP = 'https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec'; 
 
 const btn = document.getElementById('generateBtn');
@@ -26,14 +25,21 @@ const tokenBox = document.getElementById('tokenBox');
 const info = document.getElementById('info');
 
 btn.addEventListener('click', async () => {
-  btn.disabled = true; // lock immediately for this page load
+  btn.disabled = true;
   info.textContent = 'Generating...';
+
   try {
+    // Get user's public IP
+    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const ipData = await ipRes.json();
+    const userIP = ipData.ip || '';
+
     const res = await fetch(WEBAPP, {
       method: 'POST',
-      body: new URLSearchParams({ action: 'generateToken' })
+      body: new URLSearchParams({ action: 'generateToken', ip: userIP })
     });
     const data = await res.json();
+
     if (data.success) {
       tokenBox.value = data.token;
       info.textContent = 'Token generated and saved';
