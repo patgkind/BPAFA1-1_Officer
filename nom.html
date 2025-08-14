@@ -27,21 +27,10 @@
 
 <!--
   <script>
-    async function incrementVisit() {
-      try {
-        const resp = await fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit');
-        const data = await resp.json();
-        if (data.success) {
-         
-        } else {
-          
-        }
-      } catch (e) {
-        
-      }
-    }
-
-    window.addEventListener('load', incrementVisit);
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit')
+    .catch(() => {});
+});
   </script>
 -->
 </body>
