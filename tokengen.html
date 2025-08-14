@@ -29,14 +29,9 @@ btn.addEventListener('click', async () => {
   info.textContent = 'Generating...';
 
   try {
-    // Get user's public IP
-    const ipRes = await fetch('https://api.ipify.org?format=json');
-    const ipData = await ipRes.json();
-    const userIP = ipData.ip || '';
-
     const res = await fetch(WEBAPP, {
       method: 'POST',
-      body: new URLSearchParams({ action: 'generateToken', ip: userIP })
+      body: new URLSearchParams({ action: 'generateToken' })
     });
     const data = await res.json();
 
