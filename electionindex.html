@@ -9,10 +9,7 @@
   h1 { margin-bottom: 6px; }
   .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin: 10px 0; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.03); }
   label { display:block; font-weight:600; margin-bottom:6px; }
-  select {
-    width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box;
-    appearance: none;
-  }
+  select { width:100%; padding:8px; border-radius:6px; border:1px solid #d0d0d0; box-sizing:border-box; appearance: none; }
   button { padding:10px 14px; border-radius:8px; background:#1976d2; color:white; border:none; cursor:pointer; font-weight:600; }
   button[disabled] { opacity:0.6; cursor:not-allowed; }
   .success { color:green; margin-top:10px; }
@@ -41,12 +38,9 @@
   const status = document.getElementById('status');
   const submitBtn = document.getElementById('submitBtn');
 
-  // Store loaded options by position
-  const positionOptions = {};
-
-    window.addEventListener('DOMContentLoaded', () => {
-    fetch('https://script.google.com/macros/s/AKfycbxWubZoUo6cgyZ0zO7R96YFLscrz4ZYjEl0NQrOfpSH4iRoGOA4cd29P9D00AGratoP/exec?action=visit')
-      .catch(() => {});
+  window.addEventListener('DOMContentLoaded', () => {
+    fetch(`${SCRIPT_URL}?action=visit`).catch(() => {});
+    loadNominees();
   });
 
   function createDropdown(position, options) {
@@ -85,21 +79,19 @@
     status.className = 'muted';
 
     try {
-      for (const pos of POSITIONS) {
-        const url = `${SCRIPT_URL}?action=getNames&position=${encodeURIComponent(pos)}`;
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Failed to fetch nominees for ${pos}`);
-        const data = await resp.json();
+      const resp = await fetch(`${SCRIPT_URL}?action=getAllNames`);
+      if (!resp.ok) throw new Error('Failed to fetch nominees list');
+      const data = await resp.json();
 
-        if (!data.success) throw new Error(data.message || `Failed to load nominees for ${pos}`);
-
-        positionOptions[pos] = data.names || [];
+      if (!data.success || !data.positions) {
+        throw new Error(data.message || 'No nominee data received');
       }
 
       container.innerHTML = '';
-      for (const pos of POSITIONS) {
-        container.appendChild(createDropdown(pos, positionOptions[pos]));
-      }
+      POSITIONS.forEach(pos => {
+        const nominees = data.positions[pos] || [];
+        container.appendChild(createDropdown(pos, nominees));
+      });
 
       status.textContent = '';
       submitBtn.disabled = false;
@@ -141,7 +133,7 @@
     status.textContent = 'Submitting votes...';
 
     const formData = new URLSearchParams();
-    formData.append('action', 'submitElection'); // Correct action name
+    formData.append('action', 'submitElection');
     POSITIONS.forEach((pos, i) => {
       formData.append(pos, values[i]);
     });
@@ -175,8 +167,6 @@
       submitBtn.disabled = false;
     }
   });
-
-  loadNominees();
 </script>
 </body>
 </html>
