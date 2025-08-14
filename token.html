@@ -43,17 +43,24 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
     if (data.success) {
       if (data.status && data.status.toLowerCase() === 'active') {
+        if (data.isVoted && data.isVoted.toLowerCase() === 'yes') {
+          // Already voted → redirect to thankyou
+          msg.textContent = 'You have already voted, redirecting...';
+          msg.classList.add('ok');
+          setTimeout(() => location.href = 'thankyou.html', 600);
+          return;
+        }
+        // Token valid and not voted → proceed to election
         msg.textContent = 'Token valid, redirecting...';
         msg.classList.add('ok');
         setTimeout(() => {
           location.href = 'electionindex.html?token=' + encodeURIComponent(token);
         }, 600);
       } else {
+        // Token inactive → redirect to nom.html
         msg.textContent = 'Token inactive, redirecting...';
         msg.classList.add('err');
-        setTimeout(() => {
-          location.href = 'nom.html';
-        }, 800);
+        setTimeout(() => location.href = 'nom.html', 800);
       }
     } else {
       msg.textContent = data.message || 'Invalid token';
